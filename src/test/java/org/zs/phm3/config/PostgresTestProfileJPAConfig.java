@@ -1,0 +1,106 @@
+package org.zs.phm3.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import javax.persistence.EntityManagerFactory;
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Properties;
+
+@Configuration
+@Profile("postgrestest")
+
+/*@EnableJpaRepositories(basePackages = {"org.zs.phm3.auditlog", "org.zs.phm3.dashboard", "org.zs.phm3.config",
+        "org.zs.phm3.data", "org.zs.phm3.dto", "org.zs.phm3.exception", "org.zs.phm3.failure",
+        "org.zs.phm3.ftamodel", "org.zs.phm3.install", "org.zs.phm3.models", "org.zs.phm3.repository",
+        "org.zs.phm3.scheduled", "org.zs.phm3.service", "org.zs.phm3.util", "org.zs.phm3.validation", "org.zs.phm3.fds"})*/
+
+
+@EnableJpaRepositories(basePackages = {"org.zs.phm3.auditlog", "org.zs.phm3.dashboard", "org.zs.phm3.config",
+        "org.zs.phm3.data", "org.zs.phm3.dto", "org.zs.phm3.exception", "org.zs.phm3.failure",
+        "org.zs.phm3.ftamodel", "org.zs.phm3.install", "org.zs.phm3.models", "org.zs.phm3.repository",
+        "org.zs.phm3.scheduled", "org.zs.phm3.service", "org.zs.phm3.util", "org.zs.phm3.validation",
+        "org.zs.phm3.fds"})
+
+@EnableTransactionManagement
+//    @Profile("test2") //only required to allow H2JpaConfig and H2TestProfileJPAConfig to coexist in same project
+//this demo project is showcasing several ways to achieve the same end, and class-level
+//Profile annotations are only necessary because the different techniques are sharing a project
+public class PostgresTestProfileJPAConfig {
+
+    @Autowired
+    private Environment env;
+
+    @Bean
+    @Profile("postgrestest")
+    public DataSource dataSource() {
+        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
+/*            dataSource.setDriverClassName("org.h2.Driver");
+            dataSource.setUrl("jdbc:h2:mem:db;DB_CLOSE_DELAY=-1");
+            dataSource.setUsername("sa");
+            dataSource.setPassword("sa");*/
+        dataSource.setDriverClassName("org.postgresql.Driver");
+        dataSource.setUrl("jdbc:postgresql://localhost:5432/phm2test");
+        dataSource.setUsername("postgres");
+        dataSource.setPassword("ZS160135");
+        return dataSource;
+    }
+
+    @Bean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+        final LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+
+        em.setPersistenceUnitName("postgres");
+
+        HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+        em.setJpaVendorAdapter(vendorAdapter);
+
+
+        em.setDataSource(dataSource());
+        em.setPackagesToScan(new String[]{"org.zs.phm3.auditlog", "org.zs.phm3.dashboard", "org.zs.phm3.config",
+                "org.zs.phm3.data", "org.zs.phm3.dto", "org.zs.phm3.exception", "org.zs.phm3.failure",
+                "org.zs.phm3.ftamodel", "org.zs.phm3.install", "org.zs.phm3.models", "org.zs.phm3.repository",
+                "org.zs.phm3.scheduled", "org.zs.phm3.service", "org.zs.phm3.util", "org.zs.phm3.validation",
+                "org.zs.phm3.fds"});
+        em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+//        em.setJpaProperties(additionalProperties());
+        em.setJpaPropertyMap(additionalProperties());
+        return em;
+    }
+
+    @Bean
+    JpaTransactionManager transactionManager(final EntityManagerFactory entityManagerFactory) {
+        final JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory);
+        return transactionManager;
+    }
+
+    final HashMap<String, Object> additionalProperties() {
+/*        final Properties hibernateProperties = new Properties();
+
+        hibernateProperties.setProperty("hibernate.hbm2ddl.create-drop", env.getProperty("hibernate.hbm2ddl.create-drop"));
+        hibernateProperties.setProperty("hibernate.dialect", env.getProperty("hibernate.dialect"));
+        hibernateProperties.setProperty("hibernate.show_sql", env.getProperty("hibernate.show_sql"));
+
+        return hibernateProperties;*/
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put("hibernate.hbm2ddl.auto", "create-drop");//"create-drop");
+//        properties.put("hibernate.show_sql", showSql);
+        properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+//        properties.put("hibernate.default_schema", "my_default_schema");
+        properties.put("hibernate.implicit_naming_strategy", "org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy");
+        properties.put("hibernate.physical_naming_strategy", "org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy");
+        return properties;
+    }
+}
